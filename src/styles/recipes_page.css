@@ -1,0 +1,15 @@
+body
+{
+  font-family: 'Helvetica';
+  background-image: radial-gradient(circle, #94e957, #468008 );
+  display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow: auto;
+    background-image: url('/icons+img/bg-menu.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+}  
