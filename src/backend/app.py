@@ -4,26 +4,34 @@ from flask_cors import CORS
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 from database import get_database
-from models.project_model import ProjectModel
-from models.user_model import UserModel
+from models.menu_model import MenuModel
+from backend.models.usermodel import UserModel
+import openai
+import os
+from dotenv import load_dotenv
+from datetime import datetime
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Initialize database and model
 db = get_database()
-project_model = ProjectModel(db)
+menu_model = MenuModel(db)
 user_model = UserModel(db)
 
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
     try:
         data = request.json
+        first_name = data['first_name']
+        last_name = data['last_name']
         email = data['email']
         password = data['password']
 
         # Use the UserModel to create a new user
-        user_id = user_model.create_user(email, password)
+        user_id = user_model.create_user(first_name, last_name, email, password)
         return jsonify({"success": True, "user_id": user_id}), 201
 
     except ValueError as e:
@@ -50,90 +58,32 @@ def signin():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-
-@app.route('/api/projects', methods=['GET', 'POST'])
-def get_projects():
-    if request.method == "GET":
-        user_id = request.args.get('user_id')
-
-        if not user_id:
-            return jsonify({"error": "user_id is required"}), 400
-
-        try:
-            projects = project_model.get_projects_by_user(user_id)
-            # Transform ObjectId to string for JSON serialization
-            projects = [
-                {
-                    "id": str(project["_id"]),
-                    "name": project["name"],
-                    "lastUpdated": project["last_updated"],
-                    "labelledExamples": project.get("labelled_examples", 0),
-                    "totalExamples": project.get("total_examples", 0)
-                }
-                for project in projects
-            ]
-            return jsonify(projects), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-        
-    if request.method == "POST": 
-        body = request.json 
-        project_name = body.get("name", "Undefined")
-        user_id = body.get("user_id")
-        if user_id is None:
-            return jsonify({"error": "Missing user ID"}), 400
-
-        try:
-            new_project = project_model.create_project(project_name, user_id)
-            new_project = {
-                "id": str(new_project["_id"]),
-                "name": new_project["name"],
-                "lastUpdated": new_project["last_updated"],
-                "labelledExamples": new_project.get("labelled_examples", 0),
-                "totalExamples": new_project.get("total_examples", 0)
-            }
-            return jsonify(new_project), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/projects/<project_id>/entries', methods=['GET'])
-def get_project_entries(project_id):
-    try:
-        entries = list(
-            db['entries'].find({"project_id": ObjectId(project_id)})
-        )
-        # Transform ObjectId to string for JSON serialization
-        entries = [
-            {
-                "id": str(entry["_id"]),
-                "text": entry["text"],
-                "label": entry.get("label", "")
-            }
-            for entry in entries
-        ]
-        return jsonify(entries), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-
-@app.route('/api/projects/<project_id>/entries', methods=['PUT'])
-def update_project_entries(project_id):
-    try:
+@app.route('/api/save_meal', methods=['POST'])
+def save_meal():
         data = request.json
-        changes = data.get("changes", [])
-        
-        for change in changes:
-            row_id = change["id"]
-            label = change["label"]
-            db['entries'].update_one(
-                {"_id": ObjectId(row_id)},
-                {"$set": {"label": label}}
-            )
 
-        return jsonify({"success": True}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+         # Validate and structure the data
+        date = data.get("date", datetime.now().strftime('%Y-%m-%d'))
+        meals = {
+            "breakfast": data.get("breakfast", []),
+            "lunch": data.get("lunch", []),
+            "dinner": data.get("dinner", []),
+            "snacks": data.get("snacks", []),
+            "water": data.get("water", [])
+        }
+
+        # Save or update the document in the database
+        db.meals.update_one(
+            {"date": date},
+            {"$set": {"meals": meals}},
+            upsert=True
+        )
+        return jsonify({"message": "Meal data saved successfully!"})
+
+
+
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
 
 
 if __name__ == '__main__':

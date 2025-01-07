@@ -119,4 +119,34 @@ return(
 );
 };
   
+const saveMealData = async () => {
+    const mealData = {
+        date: new Date().toISOString().split('T')[0], // Current date
+        breakfast: breakfastItems,
+        lunch: lunchItems,
+        dinner: dinnerItems,
+        snacks: snackItems,
+        water: waterItems,
+    };
+
+    try {
+        const response = await fetch('/api/save_meal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mealData),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert(data.message);
+        } else {
+            alert('Error saving meal data');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving meal data');
+    }
+};
+   
+
   export default MenuPage;

@@ -15,10 +15,10 @@ const SignupPage = () => {
       setError('');
 
       try {
-          const response = await fetch('http://localhost:5000/api/auth/signup', {
+          const response = await fetch('http://localhost:5173/api/auth/signup', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email, password }),
+              body: JSON.stringify({ firstN, lastN, email, password }),
           });
 
           const data = await response.json();
@@ -36,7 +36,7 @@ const SignupPage = () => {
 return(
     <div className="sign">
     
-<form action="signup-1.html" method="post">
+<form onSubmit={handleSignUp}>
       
       <h2>NutriForge</h2><br></br>
       <h3>Sign Up</h3>

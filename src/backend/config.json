@@ -1,0 +1,3 @@
+{
+    "database_url": "nutriforge.odjkp.mongodb.net/?retryWrites=true&w=majority&appName=NutriForge"
+}
